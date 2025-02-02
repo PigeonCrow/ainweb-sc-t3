@@ -1,0 +1,32 @@
+# Byte-compiled files
+*.pyc
+__pycache__/
+.mypy_cache/
+
+# Virtual environments
+venv/
+env/
+myenv/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Other large or unnecessary files
+*.zip
+*.tar.gz
+*.mp4
+*.csv
+
+
+# dirs
+## provided code from task description
+backup/
+
