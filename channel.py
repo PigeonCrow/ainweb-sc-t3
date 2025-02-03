@@ -5,6 +5,8 @@ from flask import Flask, request, render_template, jsonify
 import json
 import requests
 from werkzeug.wrappers import response
+import time
+import random
 
 
 # Class-based application configuration
@@ -38,6 +40,14 @@ WELCOME_MESSAGE = {  # TODO: define a proper message
     "sender": "System",
 }
 
+story = []
+submissions = [] #stores sentences for the current round
+votes = {}
+current_phase = "submission" #or "voting"
+sentence_limit = 5
+vote_time_limit = 30 #seconds
+submission_time_limit = 60 #seconds
+last_phase_change = time.time()
 
 @app.cli.command("register")
 def register_command():
@@ -84,6 +94,23 @@ def filter_message(message):
 def generate_response():
     # TODO
     return response
+
+
+def save_game_state():
+    with open(CHANNEL_FILE, "w") as f:
+        json.dump({"story": story, "submissions": submissions, "votes": votes})
+
+
+def load_game_state():
+    global story, submissions, votes
+    try:
+        with open(CHANNEL_FILE, "r") as f:
+            data = json.load(f)
+            story = data.get("story", [])
+            submissions = data.get("submissions", [])
+            votes = data.get("votes", {})
+    except FileNotFoundError:
+        save_game_state()
 
 
 @app.route("/health", methods=["GET"])
@@ -158,9 +185,77 @@ def save_messages(messages):
         json.dump(messages, f)
 
 
+@app.route("/story", methods=["GET"])
+def get_game_state():
+    #return the current game state
+    if not check_authorization(request):
+        return "Invalid authorization", 400
+    return jsonify({
+        "story": story,
+        "current_phase": current_phase,
+        "submissions": submissions,
+        "votes" : votes
+    })
+
+
+@app.route("/submit", methods=["POST"])
+def submit_sentence():
+    global current_phase, last_phase_change, submissions
+    if not check_authorization(request):
+        return "Invalid authorization", 400
+    if current_phase != "submission":
+        return "Submission phase is over. Voting is in progess.", 400
+    data = request.json
+    if not data or "content" not in data or "sender" not in data:
+        return "Invalid request", 400
+    sentence = data["content"]
+    sender = data["sender"]
+    #add sentences
+    submissions.append({"sentence": sentence, "sender": sender})
+    #check for submission limit
+    if len(submissions) >= sentence_limit:
+        current_phase = "voting"
+        votes.clear()
+        last_phase_change = time.time()
+    save_game_state()
+    return "Sentence submitted!", 200
+
+
+@app.route("/vote", methods=["POST"])
+def vote():
+    global current_phase, last_phase_change, story, submissions, votes
+    if not check_authorization(request):
+        return "Invalid authorization", 400
+    if current_phase != "voting":
+        return "Voting is closed.", 400
+    data = request.json
+    if not data or "content" not in data:
+        return "Invalid request", 400
+    sentence = data["content"]
+    #counting the votes
+    if sentence in votes:
+        votes[sentence] += 1
+    else:
+        votes[sentence] = 1
+    #stop if all users voted or time limit reached:
+    if len(votes) >= len(submissions) or (time.time() - last_phase_change > vote_time_limit):
+        winning_sentence = max(votes, key=votes.get, default=None) #if there are several max -> randomly choose? / another voting?
+        if winning_sentence:
+            #add sentence to the story
+            story.append(winning_sentence)
+            #prepare and clear everything for the next round
+            submissions = [] 
+            votes = {}
+            current_phase = "submission"
+            last_phase_change = time.time()
+    save_game_state()
+    return "Thanks for voting!", 200
+    
+
 # Start development web server
 # run flask --app channel.py register
 # to register channel with hub
 
 if __name__ == "__main__":
+    load_game_state()
     app.run(port=5001, debug=True)
