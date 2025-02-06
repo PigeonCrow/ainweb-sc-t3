@@ -5,7 +5,9 @@ from flask import Flask, request, render_template, jsonify
 import json
 import requests
 from werkzeug.wrappers import response
-
+from better_profanity import profanity
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -23,18 +25,17 @@ app.app_context().push()  # create an app context before initializing db
 HUB_URL = "http://localhost:5555"
 HUB_AUTHKEY = "1234567890"
 CHANNEL_AUTHKEY = "0987654321"
-CHANNEL_NAME = "Group14-tbd"  # TODO: come up with a propper name
+CHANNEL_NAME = "Tell Tale Chain"
 CHANNEL_ENDPOINT = (
     "http://localhost:5001"  # don't forget to adjust in the bottom of the file
 )
 CHANNEL_FILE = "messages.json"
 CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 
-MAX_MESSAGES = (
-    100  # maximum number of messages to keep, TODO: mby a date/time would be better?
-)
+MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
+
 WELCOME_MESSAGE = {  # TODO: define a proper message
-    "content": "Welcome to Groups 14 Channel the topic needs still to be defined properly",
+    "content": "Welcome Tell Tale Chain Channel, continue the story! /",
     "sender": "System",
 }
 
@@ -74,10 +75,11 @@ def check_authorization(request):
     return True
 
 
-# TODO: msg filter
+# msg filter
 def filter_message(message):
-    # TODO
-    return message
+    censored_message = profanity.censor(message)
+
+    return censored_message
 
 
 # TODO: response generator
@@ -85,6 +87,10 @@ def generate_response():
     # TODO
     return response
 
+# TODO: check similarity value of new message with TfidfVectorizer 
+def calc_similarity(new_message)
+    similarity = 1 # TODO
+    return similarity
 
 @app.route("/health", methods=["GET"])
 def health_check():
