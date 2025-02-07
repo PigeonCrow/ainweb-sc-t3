@@ -9,6 +9,7 @@ from better_profanity import profanity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+
 # Class-based application configuration
 class ConfigClass(object):
     """Flask application config"""
@@ -87,12 +88,14 @@ def generate_response():
     # TODO
     return response
 
-# TODO: check similarity value of new message with TfidfVectorizer 
-def calc_similarity(new_message)
-    similarity = 1 # TODO 
+
+# TODO: check similarity value of new message with TfidfVectorizer
+def calc_similarity(new_message):
+    similarity = 1  # TODO
     ## list of availabel old messages if empty, means it is first message simmilarity value -> 1
-    ## else list is not empty, append new message to list and evaluate the whole list old + new 
+    ## else list is not empty, append new message to list and evaluate the whole list old + new
     return similarity
+
 
 @app.route("/health", methods=["GET"])
 def health_check():
