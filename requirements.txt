@@ -1,5 +1,6 @@
-flask>=2.0.1
-requests>=2.26.0
-Werkzeug>=2.0.1
-better-profanity>=0.7.0
-scikit-learn>=1.0.2
+flask
+flask-sqlalchemy
+requests
+Werkzeug
+better-profanity
+scikit-learn
