@@ -36,7 +36,7 @@ CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
 
 WELCOME_MESSAGE = {  # TODO: define a proper message
-    "content": "Welcome Tell Tale Chain Channel, continue the story! /",
+    "content": "Welcome Tell Tale Chain Channel, continue the story!",
     "sender": "System",
 }
 
@@ -135,11 +135,15 @@ def send_message():
         extra = None
     else:
         extra = message["extra"]
+
+    # filter the message content before saving
+    filtered_msg = filter_message(message["content"])
+
     # add message to messages
     messages = read_messages()
     messages.append(
         {
-            "content": message["content"],
+            "content": filtered_msg,
             "sender": message["sender"],
             "timestamp": message["timestamp"],
             "extra": extra,
