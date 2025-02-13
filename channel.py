@@ -9,6 +9,10 @@ from werkzeug.wrappers import response
 from better_profanity import profanity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer, util
+
+# load Sentence Transformer Model
+semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
 
 
 # Class-based application configuration
@@ -123,13 +127,20 @@ def calc_similarity(new_message):
     # print(last_message)
 
     updated_convo = user_content + [new_message]
-    print(updated_convo)
+    # print(updated_convo)
+
     # transform messages
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform(updated_convo)
+    # vectorizer = TfidfVectorizer()
+    # tfidf_matrix = vectorizer.fit_transform(updated_convo)
+
+    # encode using transformer
+    embeddings = semantic_model.encode(updated_convo)
 
     # calculate cosine similarity, to have an approach of coherence
-    similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+    # similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+
+    # calculate similaritiy using transformer
+    similarity = util.cos_sim(embeddings[-2], embeddings[-1]).item()
 
     # return a percentage value
     similarity_percentage = similarity * 100
