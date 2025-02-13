@@ -4,3 +4,6 @@ requests
 Werkzeug
 better-profanity
 scikit-learn
+sentence-transformers
+torch
+numpy<2
