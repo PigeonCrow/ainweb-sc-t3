@@ -8,6 +8,9 @@ venv/
 env/
 myenv/
 
+# env files 
+.env
+
 # Logs and temporary files
 *.log
 *.tmp
@@ -30,5 +33,4 @@ myenv/
 ## provided code from task description
 backup/
 
-# specific files 
-readomio.md
+

@@ -7,3 +7,6 @@ scikit-learn
 sentence-transformers
 torch
 numpy<2
+openai==0.28
+python-dotenv
+
