@@ -1,6 +1,7 @@
 ## channel.py - a simple message channel
 ##
 
+
 from flask import Flask, request, render_template, jsonify
 import json
 import requests
@@ -33,9 +34,9 @@ CHANNEL_ENDPOINT = (
 CHANNEL_FILE = "messages.json"
 CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 
-MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
+MAX_MESSAGES = 4  # maximum number set to 10 only to not consume too many resources
 
-WELCOME_MESSAGE = {  # TODO: define a proper message
+WELCOME_MESSAGE = {
     "content": "Welcome Tell Tale Chain Channel, continue the story!",
     "sender": "System",
 }
@@ -105,21 +106,33 @@ def generate_response():
 def calc_similarity(new_message):
     messages = read_messages()
 
+    # get only user messages exclude system msgs
+    # user_messages = [msg for msg in messages if msg["sender"] != "System"]
+
+    # filter user content directly
+    user_content = [
+        msg["content"] for msg in messages if msg["sender"].lower() != "system"
+    ]
+
+    print(user_content)
     # return 100% for first message
-    if not messages:
-        return 100.0
+    if not user_content:
+        return 100
 
-    last_message = messages[-1]["content"]
+    # last_message = user_content[-1]
+    # print(last_message)
 
+    updated_convo = user_content + [new_message]
+    print(updated_convo)
     # transform messages
     vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([last_message, new_message])
+    tfidf_matrix = vectorizer.fit_transform(updated_convo)
 
     # calculate cosine similarity, to have an approach of coherence
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
 
     # return a percentage value
-    similarity_percentage = similarity * 100.0
+    similarity_percentage = similarity * 100
 
     return similarity_percentage
 
@@ -176,11 +189,22 @@ def send_message():
             "content": filtered_msg,
             "sender": message["sender"],
             "timestamp": message["timestamp"],
-            "coherence factor": similarity,
+            #            "coherence factor": similarity,
+        }
+    )
+
+    system_response = generate_response()
+    messages.append(
+        {
+            "content": system_response["content"],
+            "sender": system_response["sender"],
+            "timestamp": message["timestamp"],  # Using same timestamp for simplicity
+            "similarity": similarity,  # System messages don't need similarity check
+            # "extra": system_response.get("extra"),
         }
     )
     save_messages(messages)
-    return jsonify(generate_response()), 200
+    return jsonify(system_response, 200)
 
 
 def read_messages():
