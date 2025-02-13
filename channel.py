@@ -1,6 +1,7 @@
 ## channel.py - a simple message channel
 ##
 
+
 from flask import Flask, request, render_template, jsonify
 import json
 import requests
@@ -8,6 +9,7 @@ from werkzeug.wrappers import response
 from better_profanity import profanity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -32,10 +34,10 @@ CHANNEL_ENDPOINT = (
 CHANNEL_FILE = "messages.json"
 CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 
-MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
+MAX_MESSAGES = 4  # maximum number set to 10 only to not consume too many resources
 
-WELCOME_MESSAGE = {  # TODO: define a proper message
-    "content": "Welcome Tell Tale Chain Channel, continue the story! /",
+WELCOME_MESSAGE = {
+    "content": "Welcome Tell Tale Chain Channel, continue the story!",
     "sender": "System",
 }
 
@@ -82,17 +84,58 @@ def filter_message(message):
     return censored_message
 
 
-# TODO: response generator
+# response generator
 def generate_response():
-    # TODO
+    messages = read_messages()
+    if not messages:
+        return WELCOME_MESSAGE
+
+    latest_msg = messages[-1]
+    response = {
+        "content": f"Story similarity score: {latest_msg.get('similarity', 1.0):.2f}",
+        "sender": "System",
+        "timestamp": latest_msg["timestamp"],
+        "extra": None,
+    }
+
     return response
 
-# TODO: check similarity value of new message with TfidfVectorizer 
-def calc_similarity(new_message)
-    similarity = 1 # TODO 
-    ## list of availabel old messages if empty, means it is first message simmilarity value -> 1
-    ## else list is not empty, append new message to list and evaluate the whole list old + new 
-    return similarity
+
+# approach in coherence check by checking similarity, not best apprach but "lightweight"
+# check similarity value of new message with TfidfVectorizer
+def calc_similarity(new_message):
+    messages = read_messages()
+
+    # get only user messages exclude system msgs
+    # user_messages = [msg for msg in messages if msg["sender"] != "System"]
+
+    # filter user content directly
+    user_content = [
+        msg["content"] for msg in messages if msg["sender"].lower() != "system"
+    ]
+
+    print(user_content)
+    # return 100% for first message
+    if not user_content:
+        return 100
+
+    # last_message = user_content[-1]
+    # print(last_message)
+
+    updated_convo = user_content + [new_message]
+    print(updated_convo)
+    # transform messages
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(updated_convo)
+
+    # calculate cosine similarity, to have an approach of coherence
+    similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+
+    # return a percentage value
+    similarity_percentage = similarity * 100
+
+    return similarity_percentage
+
 
 @app.route("/health", methods=["GET"])
 def health_check():
@@ -132,18 +175,36 @@ def send_message():
         extra = None
     else:
         extra = message["extra"]
+
+    # filter the message content before saving
+    filtered_msg = filter_message(message["content"])
+
+    # check coherence by checking similarity
+    similarity = calc_similarity(filtered_msg)
+
     # add message to messages
     messages = read_messages()
     messages.append(
         {
-            "content": message["content"],
+            "content": filtered_msg,
             "sender": message["sender"],
             "timestamp": message["timestamp"],
-            "extra": extra,
+            #            "coherence factor": similarity,
+        }
+    )
+
+    system_response = generate_response()
+    messages.append(
+        {
+            "content": system_response["content"],
+            "sender": system_response["sender"],
+            "timestamp": message["timestamp"],  # Using same timestamp for simplicity
+            "similarity": similarity,  # System messages don't need similarity check
+            # "extra": system_response.get("extra"),
         }
     )
     save_messages(messages)
-    return "OK", 200
+    return jsonify(system_response, 200)
 
 
 def read_messages():
@@ -162,6 +223,10 @@ def read_messages():
 
 def save_messages(messages):
     global CHANNEL_FILE
+
+    if len(messages) > MAX_MESSAGES:
+        messages = messages[-MAX_MESSAGES:]
+
     with open(CHANNEL_FILE, "w") as f:
         json.dump(messages, f)
 
