@@ -95,8 +95,8 @@ def filter_message(message):
 
 
 # response generator
-def generate_response():
-    messages = read_messages()
+def generate_response(messages):
+    # messages = read_messages()
 
     # filter user msgs again
     user_messages = [msg for msg in messages if msg["sender"].lower() != "system"]
@@ -119,8 +119,8 @@ def generate_response():
 
 # approach in coherence check by checking similarity, not best apprach but "lightweight"
 # check similarity value of new message with TfidfVectorizer
-def calc_similarity(new_message):
-    messages = read_messages()
+def calc_similarity(new_message, messages):
+    # messages = read_messages()
 
     # get only user messages exclude system msgs
     # user_messages = [msg for msg in messages if msg["sender"] != "System"]
@@ -180,12 +180,11 @@ def calc_similarity(new_message):
         },
     ]
 
-    # Call the ChatCompletion API
     response = openai.ChatCompletion.create(
         model="gpt-4", messages=prompt_messages, temperature=0.5
     )
 
-    # Extract and return the coherence evaluation from the assistant's response
+    # extract and return the coherence evaluation from the assistant's response
     similarity_percentage = response["choices"][0]["message"]["content"].strip()
 
     # return a percentage value
@@ -236,11 +235,12 @@ def send_message():
     # filter the message content before saving
     filtered_msg = filter_message(message["content"])
 
-    # check coherence by checking similarity
-    similarity = calc_similarity(filtered_msg)
-
     # add message to messages
     messages = read_messages()
+
+    # check coherence by checking similarity
+    similarity = calc_similarity(filtered_msg, messages)
+
     messages.append(
         {
             "content": filtered_msg,
@@ -251,7 +251,7 @@ def send_message():
         }
     )
 
-    system_response = generate_response()
+    system_response = generate_response(messages)
     messages.append(
         {
             "content": system_response["content"],  #  system_response["content"],
