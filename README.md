@@ -16,7 +16,7 @@ To somehow have a form of moderation, the package `better-profanity`
 
 ***Function to Filter messages***
 
-```
+```python
 def filter_message(message):
     censored_message = profanity.censor(message)
 
@@ -35,7 +35,7 @@ and with cosine_similarity check litteral divergences in the conversation.
 
 ***Import***
 
-```
+```python
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -54,7 +54,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 3. similarity factor converted into percentage( multiply by 100) and returned
 
 
-```
+```python
 def calc_similarity(new_message, messages):
 
     # filter user content directly
@@ -93,7 +93,7 @@ In this case for a functional local implementation `paraphrase-MiniLM-L6-v2` was
 
 ***Import and loading correct model***
 
-```
+```python
 from sentence_transformers import SentenceTransformer, util
 
 semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
@@ -108,7 +108,7 @@ semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
 2. calculated cosine similarity
 3. return percentage
 
-```
+```python
 def calc_similarity(new_message, messages):
 
 
@@ -149,7 +149,7 @@ however to avoid heavy resource consumption on the server, an Openai Key is ulti
 
 ***Import***
 
-```
+```python
 import openai
 ```
 
@@ -159,7 +159,7 @@ in this case since only the updated conversation is passed, and an evaluation is
 Also prompt can be more elaborate in requestinig specific commentary.
 The returned similarity_percentage is no longer a value but the full response.
 
-```
+```python
 def calc_similarity(new_message, messages):
 
     user_content = [
