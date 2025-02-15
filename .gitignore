@@ -8,6 +8,13 @@ venv/
 env/
 myenv/
 
+<<<<<<< HEAD
+# env files 
+=======
+# env files
+>>>>>>> d833478 (add api key into .env)
+.env
+
 # Logs and temporary files
 *.log
 *.tmp
@@ -25,10 +32,11 @@ myenv/
 *.mp4
 *.csv
 
-
 # dirs
 ## provided code from task description
 backup/
 
-# specific files 
-readomio.md
+<<<<<<< HEAD
+
+=======
+>>>>>>> d833478 (add api key into .env)

@@ -7,12 +7,18 @@ import json
 import requests
 from werkzeug.wrappers import response
 from better_profanity import profanity
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer, util
+
+# from sklearn.feature_extraction.text import TfidfVectorizer
+# from sklearn.metrics.pairwise import cosine_similarity
+# from sentence_transformers import SentenceTransformer, util
+import openai
+import os
 
 # load Sentence Transformer Model
-semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+# semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
+
+# openai key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 # Class-based application configuration
@@ -38,7 +44,7 @@ CHANNEL_ENDPOINT = (
 CHANNEL_FILE = "messages.json"
 CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 
-MAX_MESSAGES = 4  # maximum number set to 10 only to not consume too many resources
+MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
 
 WELCOME_MESSAGE = {
     "content": "Welcome Tell Tale Chain Channel, continue the story!",
@@ -89,14 +95,20 @@ def filter_message(message):
 
 
 # response generator
-def generate_response():
-    messages = read_messages()
+def generate_response(messages):
+    # messages = read_messages()
+
+    # filter user msgs again
+    user_messages = [msg for msg in messages if msg["sender"].lower() != "system"]
+
     if not messages:
         return WELCOME_MESSAGE
 
-    latest_msg = messages[-1]
+    latest_msg = user_messages[-1]
     response = {
-        "content": f"Story similarity score: {latest_msg.get('similarity', 1.0):.2f}",
+        "content": latest_msg.get(
+            "similarity", "No score available!"
+        ),  # f"Story similarity score: {latest_msg.get('similarity', 1.0):.2f}",
         "sender": "System",
         "timestamp": latest_msg["timestamp"],
         "extra": None,
@@ -107,8 +119,8 @@ def generate_response():
 
 # approach in coherence check by checking similarity, not best apprach but "lightweight"
 # check similarity value of new message with TfidfVectorizer
-def calc_similarity(new_message):
-    messages = read_messages()
+def calc_similarity(new_message, messages):
+    # messages = read_messages()
 
     # get only user messages exclude system msgs
     # user_messages = [msg for msg in messages if msg["sender"] != "System"]
@@ -118,7 +130,7 @@ def calc_similarity(new_message):
         msg["content"] for msg in messages if msg["sender"].lower() != "system"
     ]
 
-    print(user_content)
+    # print(user_content)
     # return 100% for first message
     if not user_content:
         return 100
@@ -134,16 +146,49 @@ def calc_similarity(new_message):
     # tfidf_matrix = vectorizer.fit_transform(updated_convo)
 
     # encode using transformer
-    embeddings = semantic_model.encode(updated_convo)
+    # embeddings = semantic_model.encode(updated_convo)
 
     # calculate cosine similarity, to have an approach of coherence
     # similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
 
     # calculate similaritiy using transformer
-    similarity = util.cos_sim(embeddings[-2], embeddings[-1]).item()
+    # similarity = util.cos_sim(embeddings[-2], embeddings[-1]).item()
+
+    # block all msgs with carrige return
+    convo_block = "\n".join(updated_convo)
+
+    # Construct the prompt for the AI
+    prompt_messages = [
+        {
+            "role": "system",
+            "content": (
+                "you are a judge that evaluates the overall coherence of a conversation. "
+                "given the conversation below, provide an overall coherence score from 0 to 100. "
+                "0 means completely incoherent and 100 means perfectly coherent. "
+                "also, include a brief comment with your evaluation. "
+                "format your response as: 'Overall coherence: XX% - your comment ...'."
+                "if the coherence is above 50, your comment should be possitive, "
+                "above 70, your comment should be very lauding, almost extactic, "
+                "between 30 and 50, comment should be neutral possitive, "
+                "if the coherence is below 30, your comment should be negative, "
+                "and below 20, should be almost dramatic. "
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"Conversation:\n{convo_block}\n\nPlease evaluate the overall coherence of the conversation.",
+        },
+    ]
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4", messages=prompt_messages, temperature=0.5
+    )
+
+    # extract and return the coherence evaluation from the assistant's response
+    similarity_percentage = response["choices"][0]["message"]["content"].strip()
 
     # return a percentage value
-    similarity_percentage = similarity * 100
+    # similarity_percentage = similarity * 100
 
     return similarity_percentage
 
@@ -190,27 +235,29 @@ def send_message():
     # filter the message content before saving
     filtered_msg = filter_message(message["content"])
 
-    # check coherence by checking similarity
-    similarity = calc_similarity(filtered_msg)
-
     # add message to messages
     messages = read_messages()
+
+    # check coherence by checking similarity
+    similarity = calc_similarity(filtered_msg, messages)
+
     messages.append(
         {
             "content": filtered_msg,
             "sender": message["sender"],
             "timestamp": message["timestamp"],
-            #            "coherence factor": similarity,
+            "similarity": similarity
+            # "coherence factor": similarity,
         }
     )
 
-    system_response = generate_response()
+    system_response = generate_response(messages)
     messages.append(
         {
-            "content": system_response["content"],
+            "content": system_response["content"],  #  system_response["content"],
             "sender": system_response["sender"],
             "timestamp": message["timestamp"],  # Using same timestamp for simplicity
-            "similarity": similarity,  # System messages don't need similarity check
+            # "similarity": similarity,  # System messages don't need similarity check
             # "extra": system_response.get("extra"),
         }
     )
