@@ -8,7 +8,11 @@ venv/
 env/
 myenv/
 
+<<<<<<< HEAD
 # env files 
+=======
+# env files
+>>>>>>> d833478 (add api key into .env)
 .env
 
 # Logs and temporary files
@@ -28,9 +32,11 @@ myenv/
 *.mp4
 *.csv
 
-
 # dirs
 ## provided code from task description
 backup/
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d833478 (add api key into .env)
