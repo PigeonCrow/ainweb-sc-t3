@@ -50,21 +50,23 @@
 
         function ChannelView({ channel, onBack }) {
             const [messages, setMessages] = React.useState([]);
-            //const [newMessage, setNewMessage] = React.useState("");
             const [sender, setSender] = React.useState("");
             const [content, setContent] = React.useState("");
 
             React.useEffect(() => {
                 if (!channel || !channel.endpoint) return;
 
-                fetch(channel.endpoint, { headers: {"Authorization": `authkey ${channel.authkey}`} }) //{ headers: { 'Authorization': '0987654321' } })
-                    .then((response) => response.text())
-                    .then((text) => { console.log("Raw response", text); 
-                        return JSON.parse(text); 
-                    })
-                    .then((data) => { console.log("API Response", data); setMessages(data.messages || []); //setChannelName(data.name || "Unknown Channel");
-                    })
-                    .catch(error => console.error("Error fetching messages:", error));
+                const fetchMessages = async () => {
+                    try {
+                        const response = await fetch(channel.endpoint, { headers: { "Authorization": `authkey ${channel.authkey}`}});
+                        const data = await response.json();
+                        console.log("API Response", data);
+                        setMessages(data);
+                    } catch (error) {
+                        console.error("Error fetching messages:", error);
+                    }
+                };
+                fetchMessages();
             }, [channel]); //or [channel.endpoint]); ?
 
             const sendMessage = async (e) => {
@@ -105,7 +107,7 @@
                     <h2>Messages from {channel.name}</h2>
                     <ul>
                         {messages.length > 0 ? messages.map((msg, index) => (
-                            <li key={index}><strong>{msg.name}:</strong> {msg.message}</li>
+                            <li key={index}><strong>{msg.sender}:</strong> {msg.content}</li>
                         )) : (<p>No messages yet.</p>)}
                     </ul>
                     <form onSubmit={sendMessage}>
