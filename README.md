@@ -9,6 +9,7 @@ It receives messages from multiple users, displays said messages and analyses th
 ## Filter
 
 To somehow have a form of moderation, the package `better-profanity`
+is used.
 
 ***Import***
 
