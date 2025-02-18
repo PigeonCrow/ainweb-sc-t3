@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple React App: Show Channels</title>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+
+        function ChannelList({ onSelectChannel } ) {
+            // React component that shows a channel list
+            // content is fetched from the university hub (works only on university network, use VPN)
+            //
+            const [channels, setChannels] = React.useState([]);
+            const [isHovered, setIsHovered] = React.useState([null]);
+
+            React.useEffect(() => {
+                // Fetch list of channels
+                fetch("http://vm146.rz.uos.de/hub/channels") // university hub
+                    .then(response => response.json())
+                    .then(data => setChannels(data.channels))
+                    .catch(error => console.error("Error when loading the channels: ", error));
+            }, []);  // empty list here means that this effect will run only once (you can add a variable to run it on change)
+
+            return (
+                <div>
+                    <h2>Channel List</h2>
+                    <ul>
+                        {channels.map(channel => (
+                            <li 
+                                key={channel.endpoint} 
+                                onClick={() => onSelectChannel(channel)}
+                                onMouseEnter={() => setIsHovered(channel.endpoint)}
+                                onMouseLeave={() => setIsHovered(null)}
+                                style={{ cursor: "pointer", color: isHovered === channel.endpoint ? "darkblue" : "black", fontWeight: isHovered === channel.endpoint ? "bold" : "normal"}}>
+                                {channel.name} (Type: {channel.type_of_service}) 
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        function ChannelView({ channel, onBack }) {
+            const [messages, setMessages] = React.useState([]);
+            //const [newMessage, setNewMessage] = React.useState("");
+            const [sender, setSender] = React.useState("");
+            const [content, setContent] = React.useState("");
+
+            React.useEffect(() => {
+                if (!channel || !channel.endpoint) return;
+
+                fetch(channel.endpoint) //{ headers: { 'Authorization': '0987654321' } })
+                    .then((response) => response.json())
+                    .then((data) => { console.log("API Response", data); setMessages(data.messages || []); //setChannelName(data.name || "Unknown Channel");
+                    })
+                    .catch(error => console.error("Error fetching messages:", error));
+            }, [channel]); //or [channel.endpoint]); ?
+
+            const sendMessage = async (e) => {
+                e.preventDefaut();
+                if (!newMessage.trim() || !senderName.trim()) return;
+
+                const message = { sender: sender, content: content };
+                console.log("Sending message:", JSON.stringify(messageData, null, 2));
+
+                try {
+                    const response = await fetch(channel.endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }, //change auth key and add authorization: ...
+                    body: JSON.stringify(message),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error sending message"); //`Server error: ${response.status}`
+                    }
+
+                    const data = await response.json();
+                    console.log("Message sent: ", data);
+
+                    setMessages((prevMessages) => [...prevMessages, message]);
+                    setSender("");
+                    setContent("");
+                } catch (error) {
+                    console.error("Error sending message: ", error);
+                }
+            };
+
+            return (
+                <div>
+                    <h2>Messages from {channel.name}</h2>
+                    <ul>
+                        {messages.length > 0 ? messages.map((msg, index) => (
+                            <li key={index}><strong>{msg.name}:</strong> {msg.message}</li>
+                        )) : (<p>No messages yet.</p>)}
+                    </ul>
+                    <form onSubmit={sendMessage}>
+                        <label>
+                            Sender:
+                            <input type="text" value={sender} onChange={(e) => setSender(e.target.value)}/>
+                        </label> 
+                        <br />
+                        <label>
+                            Message:
+                            <input type="text" value={content} onChange={(e) => setContent(e.target.value)}/>
+                        </label>
+                        <button type="button" onClick={sendMessage}>Send</button>
+                    </form>
+                    <br />
+                    <button onClick={onBack}>Back to Channel List</button>
+                </div>
+            );
+        }
+
+        function App() {
+            const [selectedChannel, setSelectedChannel] = React.useState(null);
+
+            const handleBackToList = () => {
+                setSelectedChannel(null);
+            };
+
+            return (
+                <div>
+                    <h1>Chat Client</h1>
+                    {!selectedChannel ? (<ChannelList onSelectChannel={setSelectedChannel} />) : (<ChannelView channel={selectedChannel} onBack={handleBackToList} /> )} 
+                </div>
+            );
+        }
+
+        // main code: render the ChannelList component, add more components here
+        ReactDOM.render(
+            <App />,
+            document.getElementById('root'));
+    </script>
+</body>
+</html>
