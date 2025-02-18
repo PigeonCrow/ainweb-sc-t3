@@ -145,7 +145,7 @@ def calc_similarity(new_message, messages):
 
 ```
 
-This is more suitable/robust for actual semmantic similarity. It runs locally, takes up some resources.
+This is more suitable/robust for actual semmantic similarity. It runs locally, takes slightly up some resources,(but not very much, should work on most machines).
 
 ### 3. Openai key
 
