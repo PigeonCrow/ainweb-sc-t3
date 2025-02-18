@@ -84,7 +84,7 @@ def calc_similarity(new_message, messages):
 
 ```
 
-One issue encoutered is that the similarity calculated is much literal and less semantical, 
+One issue noted, is that the similarity calculated is much literal and less semantical, 
 this approach is/was sometimes used to verify plagiarism. The similarity factor fluctuates and can be hightend by using repetitions.
 
 ### 2. Local sentence transformer
