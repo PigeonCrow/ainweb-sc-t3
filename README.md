@@ -89,7 +89,7 @@ this approach is/was sometimes used to verify plagiarism. The similarity factor 
 
 ### 2. Local sentence transformer
 
-Another more efficient method to verify semantical similarity, is using a transformer, given one has the resoureces.
+Another more efficient method to verify semantical similarity, is using a transformer.
 In this case for a functional local implementation `paraphrase-MiniLM-L6-v2` was used, a sentence transformer model with a pretrained BERT encoder (https://huggingface.co/sentence-transformers/paraphrase-MiniLM-L6-v2) 
 
 ***Import and loading correct model***
