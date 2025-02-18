@@ -33,9 +33,9 @@
                 <div>
                     <h2>Channel List</h2>
                     <ul>
-                        {channels.map(channel => (
+                        {channels.map((channel, index) => (
                             <li 
-                                key={channel.endpoint} 
+                                key={`${channel.endpoint}-${index}`} 
                                 onClick={() => onSelectChannel(channel)}
                                 onMouseEnter={() => setIsHovered(channel.endpoint)}
                                 onMouseLeave={() => setIsHovered(null)}
@@ -57,33 +57,40 @@
             React.useEffect(() => {
                 if (!channel || !channel.endpoint) return;
 
-                fetch(channel.endpoint) //{ headers: { 'Authorization': '0987654321' } })
-                    .then((response) => response.json())
+                fetch(channel.endpoint, { headers: {"Authorization": `authkey ${channel.authkey}`} }) //{ headers: { 'Authorization': '0987654321' } })
+                    .then((response) => response.text())
+                    .then((text) => { console.log("Raw response", text); 
+                        return JSON.parse(text); 
+                    })
                     .then((data) => { console.log("API Response", data); setMessages(data.messages || []); //setChannelName(data.name || "Unknown Channel");
                     })
                     .catch(error => console.error("Error fetching messages:", error));
             }, [channel]); //or [channel.endpoint]); ?
 
             const sendMessage = async (e) => {
-                e.preventDefaut();
-                if (!newMessage.trim() || !senderName.trim()) return;
+                e.preventDefault();
+                if (!content.trim() || !sender.trim()) return;
 
-                const message = { sender: sender, content: content };
-                console.log("Sending message:", JSON.stringify(messageData, null, 2));
+                const message = { sender: sender, content: content, timestamp: new Date().toISOString() };
+                console.log("Sending message:", JSON.stringify(message, null, 2));
 
                 try {
                     const response = await fetch(channel.endpoint, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" }, //change auth key and add authorization: ...
+                    headers: { "Content-Type": "application/json", "Authorization": `authkey ${channel.authkey}` }, //change auth key and add authorization: ...
                     body: JSON.stringify(message),
                     });
 
+                    const responseText = await response.text();
+                    console.log("Raw server response:", responseText);
+
                     if (!response.ok) {
-                        throw new Error("Error sending message"); //`Server error: ${response.status}`
+                        //const errorText = await response.text();
+                        throw new Error(`Server error: ${response.status} - ${errorText}`); //`Server error: ${response.status}`
                     }
 
-                    const data = await response.json();
-                    console.log("Message sent: ", data);
+                    //const data = JSON.parse(responseText); //await response.json();
+                    console.log("Message sent successfully! ");
 
                     setMessages((prevMessages) => [...prevMessages, message]);
                     setSender("");
@@ -104,14 +111,14 @@
                     <form onSubmit={sendMessage}>
                         <label>
                             Sender:
-                            <input type="text" value={sender} onChange={(e) => setSender(e.target.value)}/>
+                            <input type="text" value={sender} onChange={(e) => setSender(e.target.value)} />
                         </label> 
                         <br />
                         <label>
                             Message:
-                            <input type="text" value={content} onChange={(e) => setContent(e.target.value)}/>
+                            <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
                         </label>
-                        <button type="button" onClick={sendMessage}>Send</button>
+                        <button type="submit">Send</button>
                     </form>
                     <br />
                     <button onClick={onBack}>Back to Channel List</button>
