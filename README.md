@@ -104,10 +104,14 @@ semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
 ***Function implementation***
 
 0. Filter for user content
-    0.1 return full coherence if no content 
-1. encode in embedding space for transformer
-2. calculated cosine similarity
-3. return percentage
+
+    0.1 return full coherence if no content
+    
+2. encode in embedding space for transformer
+
+3. calculated cosine similarity
+
+4. return percentage
 
 ```python
 def calc_similarity(new_message, messages):
