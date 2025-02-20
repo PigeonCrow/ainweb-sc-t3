@@ -4,6 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple React App: Show Channels</title>
+    <style>
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message-sender {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .message-content {
+            font-size: 1.1em;
+            color: black;
+            margin-top: 8px;
+        }
+        .message-timestamp {
+            font-size: x-small;
+            color: #333;
+            margin-top: 8px;
+        }
+        .message + .message {
+            margin-top: 10px;
+        }
+        .markdown-help-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: none;
+            background: transparent;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        .markdown-help {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background: #fadede;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+        }
+        .markdown-help ul {
+            padding: 10;
+        }
+        .markdown-help li {
+            margin-bottom: 10px;
+        }
+        .close-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .close-button:hover {
+            background: #e1e0e0;
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>
@@ -31,7 +94,7 @@
 
             return (
                 <div>
-                    <h2>Channel List</h2>
+                    <h2>List of Channels</h2>
                     <ul>
                         {channels.map((channel, index) => (
                             <li 
@@ -52,6 +115,8 @@
             const [messages, setMessages] = React.useState([]);
             const [sender, setSender] = React.useState("");
             const [content, setContent] = React.useState("");
+            const [timestamp, setTimestamp] = React.useState("");
+            const [showMarkdownHelp, setShowMarkDownHelp] = React.useState(false);
 
             React.useEffect(() => {
                 if (!channel || !channel.endpoint) return;
@@ -97,27 +162,68 @@
                     setMessages((prevMessages) => [...prevMessages, message]);
                     setSender("");
                     setContent("");
+                    setTimestamp("");
                 } catch (error) {
                     console.error("Error sending message: ", error);
                 }
             };
 
+            const getRelativeTime = (timestamp) => {
+                const diff = Math.floor((new Date() - new Date(timestamp)) / 60000)
+                if (diff < 1) return "Now";
+                if (diff === 1) return "1 minute ago";
+                if (diff < 60) return `${diff} minutes ago`;
+                const hours = Math.floor(diff / 60);
+                if (hours === 1) return "1 hour ago";
+                if (hours < 24) return `${hours} hours ago`;
+                const days = Math.floor(hours / 24);
+                if (days === 1) return "1 day ago";
+                return `${days} days ago`;
+            }
+
+            const formatting = (input) => {
+                return input
+                    .replace(/\*(.*?)\*/g, "<b>$1</b>") //bold
+                    .replace(/\_(.*?)\_/g, "<i>$1</b>") //italic
+                    .replace(/\__(.*?)\__/g, "<u>$1</u>") //underlined
+                    .replace(/\-(.*?)\-/g, "<s>$1</s>"); //durchgestrichen
+            }
+            
             return (
                 <div>
-                    <h2>Messages from {channel.name}</h2>
-                    <ul>
+                    <h1>{channel.name}</h1>
+                    <div className="chat-container">
+                        <button className="markdown-help-button" onClick={() => setShowMarkDownHelp(!showMarkdownHelp)}>❓</button>
+                        {showMarkdownHelp && (
+                            <div className="markdown-help">
+                            <h2>Markdown Explanation</h2>
+                            <ul>
+                                <li>*bold* → <b>bold</b></li>
+                                <li>_italic_ → <i>_italic_</i></li>
+                                <li>__underlined__ → <u>underlined</u></li>
+                                <li>-strike- → <s>strike</s></li>
+                            </ul>
+                            <button className="close-button" onClick={() => setShowMarkDownHelp(false)}>Close</button>
+                        </div>
+                        )}
+                    </div>
+                    <div>
                         {messages.length > 0 ? messages.map((msg, index) => (
-                            <li key={index}><strong>{msg.sender}:</strong> {msg.content}</li>
+                            <div key={index} className="message">
+                                <div className="message-sender">{msg.sender}</div>
+                                <div className="message-content" dangerouslySetInnerHTML={{ __html: formatting(msg.content)}}></div>
+                                <div className="message-timestamp">{getRelativeTime(msg.timestamp)}</div>
+                            </div>
                         )) : (<p>No messages yet.</p>)}
-                    </ul>
+                    </div>
                     <form onSubmit={sendMessage}>
                         <label>
-                            Sender:
+                            Sender: 
                             <input type="text" value={sender} onChange={(e) => setSender(e.target.value)} />
                         </label> 
                         <br />
                         <label>
-                            Message:
+                            Message: 
                             <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
                         </label>
                         <button type="submit">Send</button>
@@ -137,7 +243,6 @@
 
             return (
                 <div>
-                    <h1>Chat Client</h1>
                     {!selectedChannel ? (<ChannelList onSelectChannel={setSelectedChannel} />) : (<ChannelView channel={selectedChannel} onBack={handleBackToList} /> )} 
                 </div>
             );
