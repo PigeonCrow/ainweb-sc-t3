@@ -116,10 +116,11 @@
             const [sender, setSender] = React.useState("");
             const [content, setContent] = React.useState("");
             const [timestamp, setTimestamp] = React.useState("");
-            const [showFormattingHelp, setFormattingHelp] = React.useState(false);
+            const [extra, setExtra] = React.useState("");
+            const [showFormattingHelp, setShowFormattingHelp] = React.useState(false);
+            const [count, setCount] = React.useState(0);
 
             React.useEffect(() => {
-                if (!channel || !channel.endpoint) return;
 
                 // fetch messages
                 const fetchMessages = async () => {
@@ -133,13 +134,13 @@
                     }
                 };
                 fetchMessages();
-            }, [channel]);
+            }, [count]); //only when channel changes --> needs to be changed
 
             const sendMessage = async (e) => {
                 e.preventDefault();
                 if (!content.trim() || !sender.trim()) return;
 
-                const message = { sender: sender, content: content, timestamp: new Date().toISOString() };
+                const message = { sender: sender, content: content, timestamp: new Date().toISOString(), extra: extra };
                 console.log("Sending message:", JSON.stringify(message, null, 2));
 
                 //send (/post) messages
@@ -165,6 +166,8 @@
                     setSender("");
                     setContent("");
                     setTimestamp("");
+                    setExtra("");
+                    setCount(count+1);
                 } catch (error) {
                     console.error("Error sending message: ", error);
                 }
@@ -185,14 +188,13 @@
             }
 
             // creating formatting rules, enable formatting
-            const formatting = (input) => {
-                return input
+            const formatting = (textToBeFormatted) => {
+                return textToBeFormatted
                     .replace(/\*(.*?)\*/g, "<b>$1</b>") //bold
                     .replace(/\_(.*?)\_/g, "<i>$1</b>") //italic
                     .replace(/\__(.*?)\__/g, "<u>$1</u>") //underlined
                     .replace(/\-(.*?)\-/g, "<s>$1</s>"); //strike through
             }
-            
             
             return (
                 // create an explanation button & message for the formatting rules
