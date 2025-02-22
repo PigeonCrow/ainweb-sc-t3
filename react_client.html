@@ -66,6 +66,13 @@
         .close-button:hover {
             background: #e1e0e0;
         }
+        .sysmsg {
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #d45959;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -76,6 +83,8 @@
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
     <script type="text/babel">
+
+    const sysmsg = ["Bot", "Bot: Privacy Advisor", "Server", "LLM", "System Message", "BeachBot", "system", "System", "Admin"]; //list for system messages
 
         function ChannelList({ onSelectChannel } ) {
             // React component that shows a channel list
@@ -119,6 +128,7 @@
             const [extra, setExtra] = React.useState("");
             const [showFormattingHelp, setShowFormattingHelp] = React.useState(false);
             const [count, setCount] = React.useState(0);
+            const isAutomated = (msg) => sysmsg.includes(msg.sender);
 
             React.useEffect(() => {
 
@@ -173,6 +183,7 @@
                 }
             };
 
+
             // change ISO time into relative time to display e.g. "5 minutes ago" instead of 2025-02-14T23:34:30
             const getRelativeTime = (timestamp) => {
                 const diff = Math.floor((new Date() - new Date(timestamp)) / 60000)
@@ -218,7 +229,7 @@
                     </div>
                     <div>
                         {messages.length > 0 ? messages.map((msg, index) => (
-                            <div key={index} className="message">
+                            <div key={index} className={isAutomated(msg) ? "sysmsg" : "message"}>
                                 <div className="message-sender">{msg.sender}</div>
                                 <div className="message-content" dangerouslySetInnerHTML={{ __html: formatting(msg.content)}}></div>
                                 <div className="message-timestamp">{getRelativeTime(msg.timestamp)}</div>
