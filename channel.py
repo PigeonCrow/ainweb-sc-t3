@@ -7,12 +7,16 @@ import json
 import requests
 from werkzeug.wrappers import response
 from better_profanity import profanity
+import traceback
 
 # from sklearn.feature_extraction.text import TfidfVectorizer
 # from sklearn.metrics.pairwise import cosine_similarity
 # from sentence_transformers import SentenceTransformer, util
 import openai
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # load Sentence Transformer Model
 # semantic_model = SentenceTransformer("paraphrase-MiniLM-L6-v2")
@@ -34,22 +38,31 @@ app = Flask(__name__)
 app.config.from_object(__name__ + ".ConfigClass")  # configuration
 app.app_context().push()  # create an app context before initializing db
 
-HUB_URL = "http://localhost:5555"
-HUB_AUTHKEY = "1234567890"
+HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub"
+HUB_AUTHKEY = "Crr-K24d-2N"
 CHANNEL_AUTHKEY = "0987654321"
 CHANNEL_NAME = "Tell Tale Chain"
-CHANNEL_ENDPOINT = (
-    "http://localhost:5001"  # don't forget to adjust in the bottom of the file
-)
+CHANNEL_ENDPOINT = "http://vm146.rz.uni-osnabrueck.de/u016/channel.wsgi"  # don't forget to adjust in the bottom of the file
 CHANNEL_FILE = "messages.json"
 CHANNEL_TYPE_OF_SERVICE = "aiweb24:chat"
 
-MAX_MESSAGES = 10  # maximum number set to 10 only to not consume too many resources
+MAX_MESSAGES = 20  # maximum number set to 20 only to not consume too many resources
 
-WELCOME_MESSAGE = {
-    "content": "Welcome Tell Tale Chain Channel, continue the story!",
-    "sender": "System",
-}
+WELCOME_MESSAGE = [
+    {
+        "content": "Welcome to the Tell Tale Chain Channel! Begin telling your story and let others continue it!",
+        "sender": "System",
+    }
+]
+
+
+@app.errorhandler(500)
+def internal_error(exception):
+    f = open("err.log", "a")
+    f.write("<pre>" + traceback.format_exc() + "</pre>")
+    f.close()
+
+    return "<pre>" + traceback.format_exc() + "</pre>"
 
 
 @app.cli.command("register")
@@ -89,7 +102,7 @@ def check_authorization(request):
 
 # msg filter
 def filter_message(message):
-    censored_message = profanity.censor(message)
+    censored_message = profanity.censor(message, "✨")
 
     return censored_message
 
@@ -101,17 +114,16 @@ def generate_response(messages):
     # filter user msgs again
     user_messages = [msg for msg in messages if msg["sender"].lower() != "system"]
 
-    if not messages:
+    if not user_messages:
         return WELCOME_MESSAGE
 
     latest_msg = user_messages[-1]
     response = {
         "content": latest_msg.get(
-            "similarity", "No score available!"
+            "extra", "No score available!"
         ),  # f"Story similarity score: {latest_msg.get('similarity', 1.0):.2f}",
         "sender": "System",
         "timestamp": latest_msg["timestamp"],
-        "extra": None,
     }
 
     return response
@@ -166,7 +178,7 @@ def calc_similarity(new_message, messages):
                 "given the conversation below, provide an overall coherence score from 0 to 100. "
                 "0 means completely incoherent and 100 means perfectly coherent. "
                 "also, include a brief comment with your evaluation. "
-                "format your response as: 'Overall coherence: XX% - your comment ...'."
+                "format your response as: 'Overall coherence: XX%! your comment ...'."
                 "if the coherence is above 50, your comment should be possitive, "
                 "above 70, your comment should be very lauding, almost extactic, "
                 "between 30 and 50, comment should be neutral possitive, "
@@ -246,7 +258,7 @@ def send_message():
             "content": filtered_msg,
             "sender": message["sender"],
             "timestamp": message["timestamp"],
-            "similarity": similarity
+            "extra": similarity
             # "coherence factor": similarity,
         }
     )
@@ -257,6 +269,7 @@ def send_message():
             "content": system_response["content"],  #  system_response["content"],
             "sender": system_response["sender"],
             "timestamp": message["timestamp"],  # Using same timestamp for simplicity
+            "extra": None
             # "similarity": similarity,  # System messages don't need similarity check
             # "extra": system_response.get("extra"),
         }
@@ -270,12 +283,14 @@ def read_messages():
     try:
         f = open(CHANNEL_FILE, "r")
     except FileNotFoundError:
-        return []
+        return WELCOME_MESSAGE
     try:
         messages = json.load(f)
     except json.decoder.JSONDecodeError:
         messages = []
     f.close()
+    if not messages:
+        return WELCOME_MESSAGE
     return messages
 
 
