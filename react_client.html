@@ -5,17 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple React App: Show Channels</title>
     <style>
-        .message {
+        body {
+            background-color: #ebeff8;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #f2f3e7;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            margin: auto;
+        }
+        input[type="text"] {
+            width: 90%;
             padding: 10px;
-            margin-bottom: 15px;
-            background-color: #f1f1f1;
+            font-size: 1em;
+            border: 1px solid #ccc;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .back-button {
+            padding: 10px 15px;
+            font-size: 1em;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .send-button {
+            background-color: #4a90e2;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            color: white;
+            padding: 5px;
+        }
+        .title {
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #eef1f7;
+            border-radius: 8px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+        .user-msg {
+            flex: 1;
+            background-color: #d6e4ff;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.4;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
         }
         .message-sender {
             font-size: 1.2em;
             font-weight: bold;
-            color: #333;
+            color: #444;
+            margin-bottom: 3px;
         }
         .message-content {
             font-size: 1.1em;
@@ -23,12 +87,10 @@
             margin-top: 8px;
         }
         .message-timestamp {
-            font-size: x-small;
-            color: #333;
-            margin-top: 8px;
-        }
-        .message + .message {
-            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 5px;
+            text-align: right;
         }
         .formatting-help-button {
             position: absolute;
@@ -38,12 +100,13 @@
             background: transparent;
             font-size: 30px;
             cursor: pointer;
+            color: #555;
         }
         .formatting-help {
             position: absolute;
             top: 40px;
             right: 10px;
-            background: #fadede;
+            background: #f2f3e7;
             border: 1px solid #ccc;
             padding: 20px;
             border-radius: 5px;
@@ -59,19 +122,29 @@
         .close-button {
             margin-top: 10px;
             padding: 5px 10px;
-            background: white;
+            background: #d6e4ff;
             border: 1px solid #ccc;
             border-radius: 3px;
+            cursor: pointer;
         }
         .close-button:hover {
             background: #e1e0e0;
         }
         .sysmsg {
-            padding: 10px;
-            margin-bottom: 15px;
-            background-color: #d45959;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 0.6;
+            padding: 10px 12px;
+            background: #fffbcc;
+            color: #665c00;
+            border-radius: 8px;
+            border-left: 4px solid #ffcc00;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .message-wrapper {
+            display: flex;
+            align-items: space-between;
+            gap: 10px;
+            align-items: stretch;
         }
     </style>
 </head>
@@ -101,8 +174,8 @@
             }, []);  // empty list here means that this effect will run only once (you can add a variable to run it on change)
 
             return (
-                <div>
-                    <h2>List of Channels</h2>
+                <div className="message-container">
+                    <h1 className="title">List of Channels</h1>
                     <ul>
                         {channels.map((channel, index) => (
                             <li 
@@ -183,7 +256,6 @@
                 }
             };
 
-
             // change ISO time into relative time to display e.g. "5 minutes ago" instead of 2025-02-14T23:34:30
             const getRelativeTime = (timestamp) => {
                 const diff = Math.floor((new Date() - new Date(timestamp)) / 60000)
@@ -211,8 +283,8 @@
                 // create an explanation button & message for the formatting rules
                 // input fields for sender and messages
                 <div>
-                    <h1>{channel.name}</h1>
-                    <div className="chat-container">
+                    <h1 className="title">{channel.name}</h1>
+                    <div className="message-container">
                         <button className="formatting-help-button" onClick={() => setShowFormattingHelp(!showFormattingHelp)}>❓</button>
                         {showFormattingHelp && (
                             <div className="formatting-help">
@@ -227,15 +299,6 @@
                         </div>
                         )}
                     </div>
-                    <div>
-                        {messages.length > 0 ? messages.map((msg, index) => (
-                            <div key={index} className={isAutomated(msg) ? "sysmsg" : "message"}>
-                                <div className="message-sender">{msg.sender}</div>
-                                <div className="message-content" dangerouslySetInnerHTML={{ __html: formatting(msg.content)}}></div>
-                                <div className="message-timestamp">{getRelativeTime(msg.timestamp)}</div>
-                            </div>
-                        )) : (<p>No messages yet.</p>)}
-                    </div>
                     <form onSubmit={sendMessage}>
                         <label>
                             Sender: 
@@ -246,10 +309,31 @@
                             Message: 
                             <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
                         </label>
-                        <button type="submit">Send</button>
+                        <button className="send-button" type="submit">Send</button>
                     </form>
                     <br />
-                    <button onClick={onBack}>Back to Channel List</button>
+                    <div className="message-container">
+                        {messages.length > 0 ? messages
+                            .filter(msg => !isAutomated(msg))
+                            .map((msg, index) => {
+                                const relatedSysMsg = messages.find(sysmsg =>
+                                    isAutomated(sysmsg) && sysmsg.timestamp >= msg.timestamp
+                                );
+                            return (
+                            <div key={index} className="message-wrapper">
+                                <div className="user-msg">
+                                    <div className="message-sender">{msg.sender}</div>
+                                    <div className="message-content" dangerouslySetInnerHTML={{ __html: formatting(msg.content)}}></div>
+                                    <div className="message-timestamp">{getRelativeTime(msg.timestamp)}</div>
+                                </div>
+                                {relatedSysMsg && (
+                                    <div className="sysmsg">{relatedSysMsg.content}</div>
+                                )}
+                            </div>
+                            );
+                        }) : (<p>No messages yet.</p>)}
+                    </div>
+                    <button className="back-button" onClick={onBack}>Back to Channel List</button>
                 </div>
             );
         }
